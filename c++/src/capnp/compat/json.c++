@@ -480,6 +480,8 @@ Orphan<DynamicValue> JsonCodec::decode(
       switch (input.which()) {
         case JsonValue::STRING:
           return orphanage.newOrphanCopy(input.getString());
+        case JsonValue::NULL_:
+          return orphanage.newOrphan<Text>(0);
         default:
           KJ_FAIL_REQUIRE("Expected text value");
       }
