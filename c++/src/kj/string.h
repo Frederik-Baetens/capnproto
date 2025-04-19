@@ -25,6 +25,7 @@
 #include "array.h"
 #include "kj/common.h"
 #include <string.h>
+#include <kj/one-of.h>
 
 KJ_BEGIN_HEADER
 
@@ -919,6 +920,33 @@ inline const Delimited<T>& KJ_STRINGIFY(const Delimited<T>& delimited) { return 
 template <typename T>
 _::Delimited<T> delimited(T&& arr, kj::StringPtr delim) {
   return _::Delimited<T>(kj::fwd<T>(arr), delim);
+}
+
+
+template <typename T>
+concept Stringifiable = requires(_::Stringifier s, T&& t) {
+  { s * kj::fwd<T>(t) };
+};
+
+namespace _ {
+
+    
+template <typename... Ts>
+kj::String operator*(Stringifier, const kj::OneOf<Ts...>& o)
+  requires (kj::Stringifiable<Ts> && ...)
+{
+  kj::String result;
+  bool handled = false;
+
+  (( o.template is<Ts>() &&
+      ( result = kj::str(o.template get<Ts>()),
+        handled = true )
+    ), ...);
+
+  KJ_IREQUIRE(handled, "Invalid OneOf tag (this should never happen)");
+  return result;
+}
+
 }
 
 }  // namespace kj
